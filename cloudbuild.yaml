@@ -1,9 +1,12 @@
-options:
-  logging: CLOUD_LOGGING_ONLY
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'europe-central2-docker.pkg.dev/guinea-pig-health-care-app/guinea-pig-care-repo/backend-app:latest', '.']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-central2-docker.pkg.dev/guinea-pig-health-care-app/guinea-pig-care-repo/backend-app:latest']
+    args: [
+      'build',
+      '-t', 'europe-central2-docker.pkg.dev/guinea-pig-health-care-app/guinea-pig-care-repo/backend-app:latest',
+      '-f', 'backend/Dockerfile',
+      'backend'
+    ]
 images:
   - 'europe-central2-docker.pkg.dev/guinea-pig-health-care-app/guinea-pig-care-repo/backend-app:latest'
+options:
+  logging: CLOUD_LOGGING_ONLY
