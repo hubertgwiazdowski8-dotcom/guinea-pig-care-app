@@ -14,18 +14,16 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code only
+# Copy backend code
 COPY backend/ .
 
 # Copy built frontend into backend's static directory
 COPY --from=frontend-builder /app/frontend/build ./frontend_build
 
-# Set Flask environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=8080
+# Set environment variables
 ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["flask", "run"]
+# Use Gunicorn for production
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
