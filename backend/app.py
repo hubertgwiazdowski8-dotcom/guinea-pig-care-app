@@ -39,6 +39,20 @@ def pigs():
         return jsonify([{'id': pig.id, 'name': pig.name, 'birthdate': pig.birthdate.isoformat() if pig.birthdate else None,
                          'photo_url': pig.photo_url, 'notes': pig.notes} for pig in pigs])
 
+@app.route('d g ', methods=['PUT'])
+def update_pig(pig_id):
+    pig = GuineaPig.query.get_or_404(pig_id)
+    data = request.json
+    pig.name = data.get('name', pig.name)
+    if 'birthdate' in data:
+        pig.birthdate = datetime.strptime(data['birthdate'], '%Y-%m-%d') if data['birthdate'] else None
+    pig.photo_url = data.get('photo_url', pig.photo_url)
+    
+    pig.notes = data.get('notes', pig.notes)
+    db.session.commit()
+    return jsonify({'id': pig.id, 'name': pig.name, 'birthdate': pig.birthdate.isoformat() if pig.birthdate else None,
+                    'photo_url': pig.photo_url, 'notes': pig.notes}), 200                         
+
 @app.route('/api/pigs/<int:pig_id>/logs', methods=['GET', 'POST'])
 def pig_logs(pig_id):
     if request.method == 'POST':
@@ -56,7 +70,9 @@ def pig_logs(pig_id):
         logs = CareLog.query.filter_by(pig_id=pig_id).all()
         return jsonify([{'id': log.id, 'date': log.date.isoformat(), 'weight': log.weight, 'notes': log.notes} for log in logs])
 
+import os
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=True, host='0.0.0.0', port=port)
