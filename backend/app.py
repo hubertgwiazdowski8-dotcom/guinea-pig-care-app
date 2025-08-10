@@ -4,7 +4,8 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///guineapigs.db'
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False   # opcjonalne, wycisza warningi
 db = SQLAlchemy(app)
 
 class GuineaPig(db.Model):
@@ -40,7 +41,6 @@ def pigs():
         return jsonify([{'id': pig.id, 'name': pig.name, 'birthdate': pig.birthdate.isoformat() if pig.birthdate else None,
                          'photo_url': pig.photo_url, 'notes': pig.notes} for pig in pigs])
 
-# Poprawny endpoint do aktualizacji świnki
 @app.route('/api/pigs/<int:pig_id>', methods=['PUT'])
 def update_pig(pig_id):
     pig = GuineaPig.query.get_or_404(pig_id)
@@ -72,7 +72,5 @@ def pig_logs(pig_id):
         return jsonify([{'id': log.id, 'date': log.date.isoformat(), 'weight': log.weight, 'notes': log.notes} for log in logs])
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     port = int(os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=port)
