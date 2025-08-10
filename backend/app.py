@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///guineapigs.db'
@@ -27,7 +28,7 @@ def pigs():
         data = request.json
         pig = GuineaPig(
             name=data['name'],
-            birthdate=datetime.strptime(data['birthdate'], '%Y-%m-%d') if 'birthdate' in data else None,
+            birthdate=datetime.strptime(data['birthdate'], '%Y-%m-%d') if 'birthdate' in data and data['birthdate'] else None,
             photo_url=data.get('photo_url'),
             notes=data.get('notes', '')
         )
@@ -39,7 +40,8 @@ def pigs():
         return jsonify([{'id': pig.id, 'name': pig.name, 'birthdate': pig.birthdate.isoformat() if pig.birthdate else None,
                          'photo_url': pig.photo_url, 'notes': pig.notes} for pig in pigs])
 
-@app.route('d g ', methods=['PUT'])
+# Poprawny endpoint do aktualizacji świnki
+@app.route('/api/pigs/<int:pig_id>', methods=['PUT'])
 def update_pig(pig_id):
     pig = GuineaPig.query.get_or_404(pig_id)
     data = request.json
@@ -47,7 +49,6 @@ def update_pig(pig_id):
     if 'birthdate' in data:
         pig.birthdate = datetime.strptime(data['birthdate'], '%Y-%m-%d') if data['birthdate'] else None
     pig.photo_url = data.get('photo_url', pig.photo_url)
-    
     pig.notes = data.get('notes', pig.notes)
     db.session.commit()
     return jsonify({'id': pig.id, 'name': pig.name, 'birthdate': pig.birthdate.isoformat() if pig.birthdate else None,
@@ -70,7 +71,6 @@ def pig_logs(pig_id):
         logs = CareLog.query.filter_by(pig_id=pig_id).all()
         return jsonify([{'id': log.id, 'date': log.date.isoformat(), 'weight': log.weight, 'notes': log.notes} for log in logs])
 
-import os
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
