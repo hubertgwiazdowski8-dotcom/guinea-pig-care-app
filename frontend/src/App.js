@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 function PigList({ pigs, onSelect }) {
   return (
     <div>
-      <h2>Your Giunea pigs</h2>
+      <h2>Twoje świnki morskie</h2>
       <ul>
         {pigs.map((pig) => (
           <li key={pig.id} onClick={() => onSelect(pig)}>
@@ -69,7 +69,7 @@ function PigDetails({ pig, onBack }) {
 
   return (
     <div>
-      <button onClick={onBack}>← Return</button>
+      <button onClick={onBack}>← Powrót</button>
       <h2>{pig.name}</h2>
       {pig.photo_url && <img src={pig.photo_url} alt={pig.name} style={{maxWidth: 200}} />}
       <p>Data urodzenia: {pig.birthdate || "?"}</p>
