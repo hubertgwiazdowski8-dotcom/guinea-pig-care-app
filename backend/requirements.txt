@@ -1,3 +1,5 @@
-flask
-flask_sqlalchemy
-psycopg2-binary
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+cloud-sql-python-connector[pg8000]==1.18.3
+python-dotenv==1.0.1
+pg8000==1.31.4

@@ -1,21 +1,49 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Cloud SQL Python Connector
+from google.cloud.sql.connector import Connector
+import pg8000.native
+
+# Wczytaj zmienne środowiskowe z .env
 load_dotenv()
-import os
 
 app = Flask(
     __name__,
-    static_folder='frontend_build',  # This is where the React build will be copied in Dockerfile
+    static_folder='frontend_build',  # Tu będzie build z Reacta (jeśli używasz frontendu)
     static_url_path='/'
 )
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Optional, silences warnings
+
+# Konfiguracja połączenia z Cloud SQL przy użyciu Cloud SQL Python Connector
+INSTANCE_CONNECTION_NAME = os.environ.get("INSTANCE_CONNECTION_NAME")  # np. "my-project:region:instance-name"
+DB_USER = os.environ.get("DB_USER", "quickstart-user")
+DB_PASS = os.environ.get("DB_PASS", "Postgres123!")
+DB_NAME = os.environ.get("DB_NAME", "quickstart-instance")
+
+# Inicjalizacja connectora
+connector = Connector()
+
+def getconn():
+    return connector.connect(
+        INSTANCE_CONNECTION_NAME,
+        "pg8000",
+        user=DB_USER,
+        password=DB_PASS,
+        db=DB_NAME,
+    )
+
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    f"postgresql+pg8000://{DB_USER}:{DB_PASS}@/{DB_NAME}"
+)
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "creator": getconn
+}
 db = SQLAlchemy(app)
 
-print(os.environ["DATABASE_URL"])
-
+# MODELE
 class GuineaPig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
@@ -30,6 +58,12 @@ class CareLog(db.Model):
     weight = db.Column(db.Float, nullable=True)
     notes = db.Column(db.String(300), nullable=True)
     pig = db.relationship('GuineaPig', backref=db.backref('logs', lazy=True))
+
+# ROUTES
+
+@app.route("/")
+def home():
+    return "Backend działa!"
 
 @app.route('/api/pigs', methods=['GET', 'POST'])
 def pigs():
@@ -96,7 +130,6 @@ def pig_logs(pig_id):
 
 # ---- Serve React frontend (static files) ----
 
-# Serve static files and index.html for React router
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):
