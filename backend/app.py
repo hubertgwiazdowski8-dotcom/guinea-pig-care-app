@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
 import os
 
 app = Flask(
@@ -8,9 +10,11 @@ app = Flask(
     static_folder='frontend_build',  # This is where the React build will be copied in Dockerfile
     static_url_path='/'
 )
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Optional, silences warnings
 db = SQLAlchemy(app)
+
+print(os.environ["DATABASE_URL"])
 
 class GuineaPig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
