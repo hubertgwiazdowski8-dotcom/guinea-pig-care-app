@@ -5,31 +5,35 @@ import './GuineaPigGallery.css';
 function App() {
   const [pigs, setPigs] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingPig, setEditingPig] = useState(null);
   const [pigToDelete, setPigToDelete] = useState(null);
 
-  // Pobieranie świnek
+  // Fetch guinea pigs
   const fetchPigs = () => {
     fetch('http://localhost:8080/api/pigs')
       .then(response => response.json())
       .then(data => setPigs(data))
-      .catch(error => console.error('Błąd:', error));
+      .catch(error => console.error('Error:', error));
   };
 
   useEffect(() => {
     fetchPigs();
   }, []);
 
-  // Usuwanie świnki
   const handleDeletePig = async (pigId) => {
     await fetch(`http://localhost:8080/api/pigs/${pigId}`, { method: 'DELETE' });
     fetchPigs();
     setPigToDelete(null);
   };
 
-  // Obsługa edycji (do rozbudowy)
-  const handleEditPig = (pigId) => {
-    alert("Tryb edycji świnki o id: " + pigId);
-    // Możesz tu otwierać formularz edycji
+  const handleEditPig = (pig) => {
+    setEditingPig(pig);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setEditingPig(null);
+    setShowForm(false);
   };
 
   return (
@@ -50,35 +54,51 @@ function App() {
             <div className="pig-actions">
               <button
                 className="edit-btn"
-                title="Edytuj"
-                onClick={() => handleEditPig(pig.id)}
+                title="Edit"
+                onClick={() => handleEditPig(pig)}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   fontSize: 18,
-                  marginRight: 8
+                  marginRight: 8,
+                  padding: 0
                 }}
-              >✏️</button>
+                aria-label="Edit"
+              >
+                {/* Dark SVG pencil icon */}
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M14.7 2.29a1 1 0 0 1 1.41 1.42l-10 10a1 1 0 0 1-.47.26l-3 1a1 1 0 0 1-1.26-1.26l1-3a1 1 0 0 1 .26-.47l10-10z" stroke="#222" strokeWidth="1.5" fill="none"/>
+                </svg>
+              </button>
               <button
                 className="delete-btn"
-                title="Usuń"
+                title="Delete"
                 onClick={() => setPigToDelete(pig.id)}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   fontSize: 18,
-                  color: "#c32c2c"
+                  color: "#222",
+                  padding: 0
                 }}
-              >🗑️</button>
+                aria-label="Delete"
+              >
+                {/* Dark SVG trash icon */}
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="5" y="7" width="10" height="9" rx="2" stroke="#222" strokeWidth="1.5" fill="none"/>
+                  <path d="M3 7h14" stroke="#222" strokeWidth="1.5"/>
+                  <path d="M8 7V5a2 2 0 0 1 4 0v2" stroke="#222" strokeWidth="1.5"/>
+                </svg>
+              </button>
             </div>
           </div>
         ))}
       </div>
       <button
         type="button"
-        onClick={() => setShowForm(v => !v)}
+        onClick={() => { setShowForm(v => !v); setEditingPig(null); }}
         style={{
           margin: "24px 0 18px 0",
           background: "#4693cf",
@@ -91,16 +111,23 @@ function App() {
           cursor: "pointer"
         }}
       >
-        {showForm ? "Ukryj formularz" : "Add new"}
+        {showForm && !editingPig ? "Hide form" : "Add new"}
       </button>
       <div className={`collapsible${showForm ? " open" : ""}`}>
-        {showForm && <GuineaPigForm onPigAdded={fetchPigs} />}
+        {showForm && (
+          <GuineaPigForm
+            onPigAdded={fetchPigs}
+            onPigUpdated={() => { fetchPigs(); handleFormClose(); }}
+            initialPig={editingPig}
+            onCancel={handleFormClose}
+          />
+        )}
       </div>
-      {/* Modal potwierdzający usunięcie */}
+      {/* Modal for delete confirmation */}
       {pigToDelete && (
         <div className="modal-backdrop">
           <div className="modal">
-            <p>Czy na pewno chcesz usunąć świnkę?</p>
+            <p>Are you sure you want to delete this guinea pig?</p>
             <div style={{ display: "flex", gap: "12px", marginTop: 10 }}>
               <button onClick={() => handleDeletePig(pigToDelete)} style={{
                 background: "#c32c2c",
@@ -110,7 +137,7 @@ function App() {
                 padding: "8px 18px",
                 fontWeight: "bold",
                 cursor: "pointer"
-              }}>Tak</button>
+              }}>Yes</button>
               <button onClick={() => setPigToDelete(null)} style={{
                 background: "#ddd",
                 color: "#222",
@@ -119,7 +146,7 @@ function App() {
                 padding: "8px 18px",
                 fontWeight: "bold",
                 cursor: "pointer"
-              }}>Nie</button>
+              }}>No</button>
             </div>
           </div>
         </div>

@@ -3,12 +3,12 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from './getCroppedImg';
 import './GuineaPigForm.css';
 
-export default function GuineaPigForm({ onPigAdded }) {
-  const [name, setName] = useState('');
-  const [birthdate, setBirthdate] = useState('');
-  const [notes, setNotes] = useState('');
+export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpdated, onCancel }) {
+  const [name, setName] = useState(initialPig ? initialPig.name : '');
+  const [birthdate, setBirthdate] = useState(initialPig ? initialPig.birthdate || '' : '');
+  const [notes, setNotes] = useState(initialPig ? initialPig.notes : '');
   const [photo, setPhoto] = useState(null);
-  const [photo_url, setPhotoURL] = useState(null);
+  const [photo_url, setPhotoURL] = useState(initialPig ? initialPig.photo_url ? `http://localhost:8080${initialPig.photo_url}` : null : null);
 
   // Cropper state
   const [selectedImg, setSelectedImg] = useState(null);
@@ -17,7 +17,6 @@ export default function GuineaPigForm({ onPigAdded }) {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [cropping, setCropping] = useState(false);
 
-  // Ref for keyboard focus in cropper
   const cropperContainerRef = useRef(null);
   const fileInputRef = useRef();
 
@@ -26,6 +25,18 @@ export default function GuineaPigForm({ onPigAdded }) {
       cropperContainerRef.current.focus();
     }
   }, [cropping]);
+
+  // Reset form if initialPig changes (np. po kliknięciu edytuj inną świnkę)
+  useEffect(() => {
+    if (initialPig) {
+      setName(initialPig.name || '');
+      setBirthdate(initialPig.birthdate || '');
+      setNotes(initialPig.notes || '');
+      setPhoto(null);
+      setPhotoURL(initialPig.photo_url ? `http://localhost:8080${initialPig.photo_url}` : null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [initialPig]);
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -41,7 +52,7 @@ export default function GuineaPigForm({ onPigAdded }) {
   const handleCropFinish = async () => {
     const croppedBlob = await getCroppedImg(selectedImg, croppedAreaPixels);
     const file = new File([croppedBlob], "cropped.jpg", { type: croppedBlob.type });
-    if (photo_url) URL.revokeObjectURL(photo_url);
+    if (photo_url && !initialPig) URL.revokeObjectURL(photo_url);
     const url = URL.createObjectURL(file);
     setPhoto(file);
     setPhotoURL(url);
@@ -60,7 +71,7 @@ export default function GuineaPigForm({ onPigAdded }) {
   };
 
   const handlePhotoDelete = () => {
-    if (photo_url) URL.revokeObjectURL(photo_url);
+    if (photo_url && !initialPig) URL.revokeObjectURL(photo_url);
     setPhoto(null);
     setPhotoURL(null);
     if (fileInputRef.current) {
@@ -74,31 +85,49 @@ export default function GuineaPigForm({ onPigAdded }) {
     formData.append('name', name);
     formData.append('birthdate', birthdate);
     formData.append('notes', notes);
-    if (photo) {
-      formData.append('photo', photo);
-    }
+    if (photo) formData.append('photo', photo);
 
-    const response = await fetch('http://127.0.0.1:8080/api/pigs', {
-      method: 'POST',
-      body: formData,
-    });
-    if (response.ok) {
-      setName('');
-      setBirthdate('');
-      setNotes('');
-      setPhoto(null);
-      setPhotoURL(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      if (onPigAdded) onPigAdded();
+    if (initialPig) {
+      // Edit mode (PUT)
+      const response = await fetch(`http://localhost:8080/api/pigs/${initialPig.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          birthdate,
+          notes,
+          photo_url: initialPig.photo_url // zachowaj starą fotę, jeśli nowa nie została wgrana
+        }),
+      });
+      if (response.ok) {
+        if (onPigUpdated) onPigUpdated();
+      } else {
+        alert('Edycja nie powiodła się!');
+      }
     } else {
-      alert('Coś poszło nie tak!');
+      // Add mode (POST)
+      const response = await fetch('http://localhost:8080/api/pigs', {
+        method: 'POST',
+        body: formData,
+      });
+      if (response.ok) {
+        setName('');
+        setBirthdate('');
+        setNotes('');
+        setPhoto(null);
+        setPhotoURL(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        if (onPigAdded) onPigAdded();
+      } else {
+        alert('Coś poszło nie tak!');
+      }
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
       <div className='title-row'>
-        <h1>List of pigs</h1>
+        <h1>{initialPig ? "Edytuj świnkę" : "List of pigs"}</h1>
       </div>
       <div className="form-row">
         <label>Name:</label>
@@ -115,7 +144,7 @@ export default function GuineaPigForm({ onPigAdded }) {
       <div className="form-row">
         <label>Photo:</label>
         <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-        {photo && photo_url && (
+        {photo_url && (
           <div style={{ position: "relative", display: "inline-block", marginTop: 10 }}>
             <img
               src={photo_url}
@@ -176,7 +205,16 @@ export default function GuineaPigForm({ onPigAdded }) {
           </div>
         </div>
       )}
-      <button type="submit" className="submit-btn">Dodaj świnkę</button>
+      <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+        <button type="submit" className="submit-btn">
+          {initialPig ? "Zapisz zmiany" : "Dodaj świnkę"}
+        </button>
+        {initialPig && (
+          <button type="button" onClick={onCancel} className="cancel-btn">
+            Anuluj
+          </button>
+        )}
+      </div>
     </form>
   );
 }
