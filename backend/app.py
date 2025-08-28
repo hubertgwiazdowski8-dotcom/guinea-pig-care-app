@@ -2,48 +2,24 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from dotenv import load_dotenv
+from flask_cors import CORS
 
-# Cloud SQL Python Connector
-from google.cloud.sql.connector import Connector
-import pg8000.native
-
-# Wczytaj zmienne środowiskowe z .env
-load_dotenv()
+# Where uploaded photos will be stored
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'photos')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(
     __name__,
-    static_folder='frontend_build',  # Tu będzie build z Reacta (jeśli używasz frontendu)
+    static_folder='frontend_build',  # for React build
     static_url_path='/'
 )
 
-# Konfiguracja połączenia z Cloud SQL przy użyciu Cloud SQL Python Connector
-INSTANCE_CONNECTION_NAME = os.environ.get("INSTANCE_CONNECTION_NAME")  # np. "my-project:region:instance-name"
-DB_USER = os.environ.get("DB_USER", "quickstart-user")
-DB_PASS = os.environ.get("DB_PASS", "Postgres123!")
-DB_NAME = os.environ.get("DB_NAME", "quickstart-instance")
+CORS(app)
 
-# Inicjalizacja connectora
-connector = Connector()
-
-def getconn():
-    return connector.connect(
-        INSTANCE_CONNECTION_NAME,
-        "pg8000",
-        user=DB_USER,
-        password=DB_PASS,
-        db=DB_NAME,
-    )
-
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    f"postgresql+pg8000://{DB_USER}:{DB_PASS}@/{DB_NAME}"
-)
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "creator": getconn
-}
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///mydb.sqlite3"
 db = SQLAlchemy(app)
 
-# MODELE
+# MODELS
 class GuineaPig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
@@ -68,16 +44,27 @@ def home():
 @app.route('/api/pigs', methods=['GET', 'POST'])
 def pigs():
     if request.method == 'POST':
-        data = request.json
+        name = request.form.get('name')
+        birthdate = request.form.get('birthdate')
+        notes = request.form.get('notes')
+        photo = request.files.get('photo')
+        photo_url = None
+
+        if photo:
+            filename = f"{name}_{int(datetime.now().timestamp())}.jpg"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            photo.save(filepath)
+            photo_url = f"/static/photos/{filename}"
+
         pig = GuineaPig(
-            name=data['name'],
-            birthdate=datetime.strptime(data['birthdate'], '%Y-%m-%d') if 'birthdate' in data and data['birthdate'] else None,
-            photo_url=data.get('photo_url'),
-            notes=data.get('notes', '')
+            name=name,
+            birthdate=datetime.strptime(birthdate, '%Y-%m-%d') if birthdate else None,
+            photo_url=photo_url,
+            notes=notes
         )
         db.session.add(pig)
         db.session.commit()
-        return jsonify({'id': pig.id}), 201
+        return jsonify({'id': pig.id, 'photo_url': photo_url}), 201
     else:
         pigs = GuineaPig.query.all()
         return jsonify([{
@@ -128,17 +115,23 @@ def pig_logs(pig_id):
             'notes': log.notes
         } for log in logs])
 
-# ---- Serve React frontend (static files) ----
+# ---- Serve uploaded photos ----
+@app.route('/static/photos/<filename>')
+def uploaded_file(filename):
+    # This will serve files from UPLOAD_FOLDER when accessing /static/photos/<filename>
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
+# ---- Serve React frontend (static files) ----
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
-        # For all other routes, serve index.html (React SPA)
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     port = int(os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=port)
