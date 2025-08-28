@@ -74,6 +74,13 @@ def pigs():
             'photo_url': pig.photo_url,
             'notes': pig.notes
         } for pig in pigs])
+    
+@app.route('/api/pigs/<int:pig_id>', methods=['DELETE'])
+def delete_pig(pig_id):
+    pig = GuineaPig.query.get_or_404(pig_id)
+    db.session.delete(pig)
+    db.session.commit()
+    return jsonify({'message': 'Guinea pig deleted'}), 200    
 
 @app.route('/api/pigs/<int:pig_id>', methods=['PUT'])
 def update_pig(pig_id):
