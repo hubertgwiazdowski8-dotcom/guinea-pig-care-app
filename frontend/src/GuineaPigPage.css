@@ -1,0 +1,8 @@
+.collapsible {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .4s cubic-bezier(.4,0,.2,1);
+  }
+  .collapsible.open {
+    max-height: 1200px;
+  }

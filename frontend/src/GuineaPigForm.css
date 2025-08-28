@@ -1,0 +1,128 @@
+.form-container {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 32px 32px 24px 32px;
+  background: #fafafa;
+  border-radius: 24px;
+  box-shadow: 0 2px 32px #0001;
+}
+
+.title-row h1 {
+  margin-bottom: 24px;
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+.form-row label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 1.09rem;
+}
+
+input, textarea {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  font-size: 1rem;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.submit-btn {
+  background: #4693cf;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 0;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.submit-btn:hover {
+  background: #3173aa;
+}
+
+/* --- Cropper modal style --- */
+.cropper-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.cropper-container {
+  background: #fff;
+  padding: 24px 24px 60px 24px;
+  border-radius: 16px;
+  box-shadow: 0 6px 32px #0005;
+  position: relative;
+  width: 420px;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: none;
+}
+
+.easy-crop-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  max-width: 90vw;
+  max-height: 60vh;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background: #222;
+}
+
+.cropper-buttons {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.crop-btn {
+  padding: 10px 28px;
+  background: #4693cf;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.crop-btn:hover {
+  background: #3173aa;
+}
+.crop-cancel-btn {
+  padding: 10px 28px;
+  background: #aaa;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.crop-cancel-btn:hover {
+  background: #888;
+}
