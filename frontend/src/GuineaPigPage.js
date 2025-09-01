@@ -21,7 +21,7 @@ export default function GuineaPigPage({ pigs, onPigAdded }) {
           cursor: "pointer"
         }}
       >
-        {showForm ? "Ukryj formularz" : "Add new"}
+        {showForm ? "Hide form" : "Add new"}
       </button>
       <div className={`collapsible${showForm ? " open" : ""}`}>
         {showForm && (

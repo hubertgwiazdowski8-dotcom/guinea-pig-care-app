@@ -26,7 +26,6 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
     }
   }, [cropping]);
 
-  // Reset form if initialPig changes (np. po kliknięciu edytuj inną świnkę)
   useEffect(() => {
     if (initialPig) {
       setName(initialPig.name || '');
@@ -96,7 +95,7 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
           name,
           birthdate,
           notes,
-          photo_url: initialPig.photo_url // zachowaj starą fotę, jeśli nowa nie została wgrana
+          photo_url: initialPig.photo_url // If a new photo is selected, send as multipart/form-data
         }),
       });
       if (response.ok) {
@@ -127,7 +126,7 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
   return (
     <form onSubmit={handleSubmit} className="form-container">
       <div className='title-row'>
-        <h1>{initialPig ? "Edytuj świnkę" : "List of pigs"}</h1>
+        <h1>{initialPig ? "Edit pig" : "List of pigs"}</h1>
       </div>
       <div className="form-row">
         <label>Name:</label>
@@ -169,8 +168,8 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
                 cursor: "pointer",
                 boxShadow: "0 1px 4px #0002"
               }}
-              aria-label="Usuń zdjęcie"
-              title="Usuń zdjęcie"
+              aria-label="Delete photo"
+              title="Delete photo"
             >×</button>
           </div>
         )}
@@ -196,10 +195,10 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
             </div>
             <div className="cropper-buttons">
               <button type="button" className="crop-btn" onClick={handleCropFinish}>
-                Zapisz przycięcie
+                Save Crop
               </button>
               <button type="button" className="crop-cancel-btn" onClick={handleCropCancel}>
-                Anuluj
+                Cancel
               </button>
             </div>
           </div>
@@ -207,7 +206,7 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
       )}
       <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
         <button type="submit" className="submit-btn">
-          {initialPig ? "Zapisz zmiany" : "Dodaj świnkę"}
+          {initialPig ? "Save changes" : "Add pig"}
         </button>
         {initialPig && (
           <button type="button" onClick={onCancel} className="cancel-btn">
