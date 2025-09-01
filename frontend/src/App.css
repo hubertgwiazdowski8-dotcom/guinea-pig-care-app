@@ -1,38 +1,75 @@
-.App {
-  text-align: center;
-}
+.pigs-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin: 32px 0 22px 0;
+    justify-content: center;
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
   }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+  
+  .pig-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 140px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px #0001;
+    padding: 18px 10px 14px 10px;
+    transition: box-shadow 0.2s;
   }
-  to {
-    transform: rotate(360deg);
+  
+  .pig-card:hover {
+    box-shadow: 0 4px 24px #0002;
   }
-}
+  
+  .pig-photo-wrap {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    background: #f2f2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  
+  .pig-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .pig-photo-placeholder {
+    color: #888;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  
+  .pig-name {
+    font-weight: 600;
+    font-size: 1.08rem;
+    text-align: center;
+    margin-top: 4px;
+    word-break: break-word;
+  }
+
+  .h1 {
+    text-align: center;
+  }
+
+  .form-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .add-button {
+    background-color: #00abff;
+    margin: 10px;
+    padding: 1rem;
+    border-radius: 10px;
+    border-color: #f2f2f2;
+  }

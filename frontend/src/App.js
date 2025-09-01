@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import GuineaPigForm from './GuineaPigForm';
-import './GuineaPigGallery.css';
+import './App.css';
 
 function App() {
   const [pigs, setPigs] = useState([]);
@@ -38,6 +38,7 @@ function App() {
 
   return (
     <div className='App'>
+      <h1 className='h1'>List of your pigs</h1>
       <div className="pigs-gallery">
         {pigs.map(pig => (
           <div className="pig-card" key={pig.id}>
@@ -96,23 +97,15 @@ function App() {
           </div>
         ))}
       </div>
+      <div className='form-button'>
       <button
         type="button"
+        className='add-button'
         onClick={() => { setShowForm(v => !v); setEditingPig(null); }}
-        style={{
-          margin: "24px 0 18px 0",
-          background: "#4693cf",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          padding: "10px 22px",
-          fontSize: "1.1rem",
-          fontWeight: "600",
-          cursor: "pointer"
-        }}
       >
         {showForm && !editingPig ? "Hide form" : "Add new"}
       </button>
+      </div>
       <div className={`collapsible${showForm ? " open" : ""}`}>
         {showForm && (
           <GuineaPigForm
