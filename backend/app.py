@@ -1,8 +1,14 @@
 import os
+import firebase_admin
+from firebase_admin import credentials, auth
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_cors import CORS
+from auth import firebase_required
+
+cred = credentials.Certificate("firebase-service-account.json")
+firebase_admin.initialize_app(cred)
 
 # Where uploaded photos will be stored
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'photos')
@@ -26,6 +32,7 @@ class GuineaPig(db.Model):
     birthdate = db.Column(db.Date, nullable=True)
     photo_url = db.Column(db.String(200), nullable=True)
     notes = db.Column(db.String(300), nullable=True)
+    user_id = db.Column(db.String(128), nullable=False)  # <-- DODANE
 
 class CareLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,7 +49,10 @@ def home():
     return "Backend działa!"
 
 @app.route('/api/pigs', methods=['GET', 'POST'])
+@firebase_required
 def pigs():
+    user_id = request.user['uid']
+
     if request.method == 'POST':
         name = request.form.get('name')
         birthdate = request.form.get('birthdate')
@@ -60,13 +70,14 @@ def pigs():
             name=name,
             birthdate=datetime.strptime(birthdate, '%Y-%m-%d') if birthdate else None,
             photo_url=photo_url,
-            notes=notes
+            notes=notes,
+            user_id=user_id  # <-- DODANE
         )
         db.session.add(pig)
         db.session.commit()
         return jsonify({'id': pig.id, 'photo_url': photo_url}), 201
     else:
-        pigs = GuineaPig.query.all()
+        pigs = GuineaPig.query.filter_by(user_id=user_id).all()  # <-- DODANE
         return jsonify([{
             'id': pig.id,
             'name': pig.name,
@@ -76,15 +87,23 @@ def pigs():
         } for pig in pigs])
     
 @app.route('/api/pigs/<int:pig_id>', methods=['DELETE'])
+@firebase_required
 def delete_pig(pig_id):
+    user_id = request.user['uid']
     pig = GuineaPig.query.get_or_404(pig_id)
+    if pig.user_id != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
     db.session.delete(pig)
     db.session.commit()
     return jsonify({'message': 'Guinea pig deleted'}), 200    
 
 @app.route('/api/pigs/<int:pig_id>', methods=['PUT'])
+@firebase_required
 def update_pig(pig_id):
+    user_id = request.user['uid']
     pig = GuineaPig.query.get_or_404(pig_id)
+    if pig.user_id != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
     data = request.json
     pig.name = data.get('name', pig.name)
     if 'birthdate' in data:
@@ -101,7 +120,13 @@ def update_pig(pig_id):
     }), 200
 
 @app.route('/api/pigs/<int:pig_id>/logs', methods=['GET', 'POST'])
+@firebase_required
 def pig_logs(pig_id):
+    user_id = request.user['uid']
+    pig = GuineaPig.query.get_or_404(pig_id)
+    if pig.user_id != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
     if request.method == 'POST':
         data = request.json
         log = CareLog(

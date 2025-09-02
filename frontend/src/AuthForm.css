@@ -1,0 +1,17 @@
+.log-field {
+    padding: 2rem;
+    text-align: center;
+    
+}
+
+.inputs {
+    text-align: center;
+}
+
+.log-button {
+    padding: 1rem;
+    background-color: rgb(21, 127, 32);
+    font-size: 1rem;
+    color: rgb(219, 219, 219);
+    margin: 0.25rem;
+}

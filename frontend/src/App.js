@@ -1,27 +1,66 @@
 import React, { useEffect, useState } from 'react';
+import { auth } from './firebase';
+import AuthForm from './AuthForm';
+import GuineaPigList from './GuineaPigList';
 import GuineaPigForm from './GuineaPigForm';
+import Modal from './Modal';
 import './App.css';
 
 function App() {
+  const [user, setUser] = useState(null);
   const [pigs, setPigs] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPig, setEditingPig] = useState(null);
   const [pigToDelete, setPigToDelete] = useState(null);
 
-  // Fetch guinea pigs
-  const fetchPigs = () => {
-    fetch('http://localhost:8080/api/pigs')
-      .then(response => response.json())
-      .then(data => setPigs(data))
-      .catch(error => console.error('Error:', error));
-  };
-
+  // Obsługa logowania/wylogowania
   useEffect(() => {
-    fetchPigs();
+    const unsubscribe = auth.onAuthStateChanged(u => setUser(u));
+    return () => unsubscribe();
   }, []);
 
+  // Pobieraj świnki tylko gdy user jest zalogowany
+  useEffect(() => {
+    if (user) {
+      fetchPigs();
+    } else {
+      setPigs([]);
+    }
+    // eslint-disable-next-line
+  }, [user]);
+
+  // Funkcja pobierająca świnki z tokenem
+  const fetchPigs = async () => {
+    if (!auth.currentUser) return;
+    const token = await auth.currentUser.getIdToken();
+    fetch('http://localhost:8080/api/pigs', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPigs(data);
+        } else {
+          setPigs([]);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setPigs([]);
+      });
+  };
+
+  // Usuwanie świnki z tokenem
   const handleDeletePig = async (pigId) => {
-    await fetch(`http://localhost:8080/api/pigs/${pigId}`, { method: 'DELETE' });
+    const token = await auth.currentUser.getIdToken();
+    await fetch(`http://localhost:8080/api/pigs/${pigId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     fetchPigs();
     setPigToDelete(null);
   };
@@ -36,76 +75,49 @@ function App() {
     setShowForm(false);
   };
 
+  if (!user) {
+    return (
+      <div className='App'>
+        <h1 className='h1'>Guinea Pig App</h1>
+        <AuthForm />
+      </div>
+    );
+  }
+
   return (
     <div className='App'>
-      <h1 className='h1'>List of your pigs</h1>
-      <div className="pigs-gallery">
-        {pigs.map(pig => (
-          <div className="pig-card" key={pig.id}>
-            <div className="pig-photo-wrap">
-              <img
-                className="pig-photo"
-                src={pig.photo_url
-                  ? `http://localhost:8080${pig.photo_url}`
-                  : "http://localhost:8080/static/photos/default-guinea-pig.png"}
-                alt={pig.name}
-              />
-            </div>
-            <div className="pig-name">{pig.name}</div>
-            <div className="pig-actions">
-              <button
-                className="edit-btn"
-                title="Edit"
-                onClick={() => handleEditPig(pig)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  marginRight: 8,
-                  padding: 0
-                }}
-                aria-label="Edit"
-              >
-                {/* Dark SVG pencil icon */}
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M14.7 2.29a1 1 0 0 1 1.41 1.42l-10 10a1 1 0 0 1-.47.26l-3 1a1 1 0 0 1-1.26-1.26l1-3a1 1 0 0 1 .26-.47l10-10z" stroke="#222" strokeWidth="1.5" fill="none"/>
-                </svg>
-              </button>
-              <button
-                className="delete-btn"
-                title="Delete"
-                onClick={() => setPigToDelete(pig.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  color: "#222",
-                  padding: 0
-                }}
-                aria-label="Delete"
-              >
-                {/* Dark SVG trash icon */}
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <rect x="5" y="7" width="10" height="9" rx="2" stroke="#222" strokeWidth="1.5" fill="none"/>
-                  <path d="M3 7h14" stroke="#222" strokeWidth="1.5"/>
-                  <path d="M8 7V5a2 2 0 0 1 4 0v2" stroke="#222" strokeWidth="1.5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className='form-button'>
       <button
-        type="button"
-        className='add-button'
-        onClick={() => { setShowForm(v => !v); setEditingPig(null); }}
+        onClick={() => auth.signOut()}
+        style={{
+          float: 'right',
+          margin: 16,
+          padding: "8px 16px",
+          background: "#eee",
+          border: "1px solid #bbb",
+          borderRadius: 4,
+          cursor: "pointer"
+        }}
       >
-        {showForm && !editingPig ? "Hide form" : "Add new"}
+        Wyloguj
       </button>
+      <h1 className='h1'>List of your pigs</h1>
+      
+      <GuineaPigList
+        pigs={pigs}
+        onEdit={handleEditPig}
+        onDelete={setPigToDelete}
+      />
+
+      <div className='form-button'>
+        <button
+          type="button"
+          className='add-button'
+          onClick={() => { setShowForm(v => !v); setEditingPig(null); }}
+        >
+          {showForm && !editingPig ? "Hide form" : "Add new"}
+        </button>
       </div>
+      
       <div className={`collapsible${showForm ? " open" : ""}`}>
         {showForm && (
           <GuineaPigForm
@@ -113,37 +125,18 @@ function App() {
             onPigUpdated={() => { fetchPigs(); handleFormClose(); }}
             initialPig={editingPig}
             onCancel={handleFormClose}
+            // PRZEKAŻ USER (jeśli potrzebujesz w GuineaPigForm do requesta)
+            user={user}
           />
         )}
       </div>
-      {/* Modal for delete confirmation */}
-      {pigToDelete && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p>Are you sure you want to delete this guinea pig?</p>
-            <div style={{ display: "flex", gap: "12px", marginTop: 10 }}>
-              <button onClick={() => handleDeletePig(pigToDelete)} style={{
-                background: "#c32c2c",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                padding: "8px 18px",
-                fontWeight: "bold",
-                cursor: "pointer"
-              }}>Yes</button>
-              <button onClick={() => setPigToDelete(null)} style={{
-                background: "#ddd",
-                color: "#222",
-                border: "none",
-                borderRadius: "4px",
-                padding: "8px 18px",
-                fontWeight: "bold",
-                cursor: "pointer"
-              }}>No</button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <Modal
+        show={!!pigToDelete}
+        onConfirm={() => handleDeletePig(pigToDelete)}
+        onCancel={() => setPigToDelete(null)}
+        message="Are you sure you want to delete this guinea pig?"
+      />
     </div>
   );
 }

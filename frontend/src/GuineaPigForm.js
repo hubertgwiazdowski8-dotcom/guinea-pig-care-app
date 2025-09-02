@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from './getCroppedImg';
 import './GuineaPigForm.css';
+import { auth } from "./firebase";
 
 export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpdated, onCancel }) {
   const [name, setName] = useState(initialPig ? initialPig.name : '');
@@ -78,50 +79,59 @@ export default function GuineaPigForm({ onPigAdded, initialPig = null, onPigUpda
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('birthdate', birthdate);
-    formData.append('notes', notes);
-    if (photo) formData.append('photo', photo);
 
-    if (initialPig) {
-      // Edit mode (PUT)
-      const response = await fetch(`http://localhost:8080/api/pigs/${initialPig.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          birthdate,
-          notes,
-          photo_url: initialPig.photo_url // If a new photo is selected, send as multipart/form-data
-        }),
-      });
-      if (response.ok) {
-        if (onPigUpdated) onPigUpdated();
-      } else {
-        alert('Edycja nie powiodła się!');
-      }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('birthdate', birthdate);
+  formData.append('notes', notes);
+  if (photo) formData.append('photo', photo);
+
+  const token = await auth.currentUser.getIdToken();
+
+  if (initialPig) {
+    // Edit mode (PUT)
+    const response = await fetch(`http://localhost:8080/api/pigs/${initialPig.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name,
+        birthdate,
+        notes,
+        photo_url: initialPig.photo_url // handle photo upload separately if changed
+      }),
+    });
+    if (response.ok) {
+      if (onPigUpdated) onPigUpdated();
     } else {
-      // Add mode (POST)
-      const response = await fetch('http://localhost:8080/api/pigs', {
-        method: 'POST',
-        body: formData,
-      });
-      if (response.ok) {
-        setName('');
-        setBirthdate('');
-        setNotes('');
-        setPhoto(null);
-        setPhotoURL(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        if (onPigAdded) onPigAdded();
-      } else {
-        alert('Coś poszło nie tak!');
-      }
+      alert('Editing failed!');
     }
-  };
+  } else {
+    // Add mode (POST)
+    const response = await fetch('http://localhost:8080/api/pigs', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.ok) {
+      setName('');
+      setBirthdate('');
+      setNotes('');
+      setPhoto(null);
+      setPhotoURL(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (onPigAdded) onPigAdded();
+    } else {
+      alert('Something went wrong!');
+    }
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
